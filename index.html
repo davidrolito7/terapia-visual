@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terapia Visual</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --accent: #2563eb;
+    --accent2: #7c3aed;
+    --accent3: #059669;
+    --warn: #d97706;
+    --text: #1e293b;
+    --muted: #64748b;
+    --sidebar-w: 196px;
+    --header-h: 54px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── HEADER ── */
+  header {
+    height: var(--header-h);
+    flex-shrink: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(37,99,235,0.1);
+    z-index: 100;
+    gap: 12px;
+  }
+
+  .logo {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .logo span { color: var(--text); }
+
+  .stats {
+    display: flex;
+    gap: 18px;
+    font-family: 'DM Mono', monospace;
+  }
+  .stat { display: flex; flex-direction: column; align-items: center; }
+  .stat-val { font-size: 1.05rem; font-weight: 500; color: var(--accent); line-height: 1.2; }
+  .stat-lbl { color: var(--muted); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .menu-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    border: 1px solid rgba(37,99,235,0.2);
+    border-radius: 8px;
+    background: rgba(37,99,235,0.06);
+    cursor: pointer;
+    color: var(--accent);
+    flex-shrink: 0;
+    font-size: 1.1rem;
+    transition: background 0.18s;
+  }
+  .menu-toggle:hover { background: rgba(37,99,235,0.12); }
+
+  /* ── MOBILE DROPDOWN ── */
+  .mobile-panel {
+    display: none;
+    position: fixed;
+    top: var(--header-h);
+    left: 0; right: 0;
+    background: var(--surface);
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+    z-index: 90;
+    padding: 14px 16px 18px;
+    animation: slideDown 0.22s ease;
+  }
+  .mobile-panel.open { display: block; }
+  @keyframes slideDown {
+    from { opacity:0; transform: translateY(-8px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .mobile-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    margin-bottom: 14px;
+    scrollbar-width: none;
+  }
+  .mobile-chips::-webkit-scrollbar { display: none; }
+
+  .chip {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 9px 13px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.09);
+    background: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.18s;
+    min-width: 66px;
+    text-align: center;
+  }
+  .chip .chip-icon { font-size: 1.3rem; }
+  .chip:hover { border-color: var(--accent); background: rgba(37,99,235,0.05); }
+  .chip.active { border-color: var(--accent); background: rgba(37,99,235,0.1); color: var(--accent); }
+
+  .mobile-sliders {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 20px;
+  }
+
+  /* ── LAYOUT ── */
+  .body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+    padding: 14px 10px;
+    gap: 5px;
+    overflow-y: auto;
+  }
+
+  .section-title {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    padding: 0 5px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+  }
+
+  .ex-btn {
+    background: none;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 9px;
+    color: var(--text);
+    padding: 7px 9px;
+    cursor: pointer;
+    text-align: left;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.79rem;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .ex-btn:hover { border-color: var(--accent); background: rgba(37,99,235,0.05); }
+  .ex-btn.active { border-color: var(--accent); background: rgba(37,99,235,0.09); color: var(--accent); }
+  .ex-btn .icon { font-size: 1.05rem; flex-shrink: 0; }
+  .ex-btn .info { display: flex; flex-direction: column; gap: 1px; }
+  .ex-btn .ex-name { font-weight: 600; line-height: 1.2; }
+  .ex-btn .ex-desc { font-size: 0.62rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .ex-btn.active .ex-desc { color: rgba(37,99,235,0.58); }
+
+  .divider { height: 1px; background: rgba(0,0,0,0.06); margin: 3px 0; flex-shrink: 0; }
+
+  .slider-group { padding: 3px 5px; }
+  .slider-group label {
+    font-size: 0.6rem; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.1em; display: block; margin-bottom: 5px;
+  }
+  input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+  .slider-val { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--accent); margin-top: 2px; }
+
+  /* ── CANVAS WRAP ── */
+  .canvas-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 14px 16px 56px;
+  }
+
+  .canvas-wrap::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(37,99,235,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,99,235,0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+  }
+
+  canvas {
+    border-radius: 14px;
+    border: 1px solid rgba(37,99,235,0.13);
+    background: #ffffff;
+    box-shadow: 0 4px 28px rgba(37,99,235,0.07), 0 1px 3px rgba(0,0,0,0.05);
+    cursor: none;
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  /* ── CONTROLS ── */
+  .controls {
+    position: absolute;
+    bottom: 14px;
+    display: flex; gap: 8px;
+    z-index: 5;
+  }
+
+  .btn {
+    padding: 7px 18px;
+    border-radius: 50px;
+    border: 1px solid rgba(37,99,235,0.28);
+    background: rgba(37,99,235,0.07);
+    color: var(--accent);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.77rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: rgba(37,99,235,0.13); border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: #1d4ed8; }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* ── OVERLAY ── */
+  .overlay {
+    position: absolute; inset: 0;
+    background: rgba(240,244,248,0.95);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 14px; border-radius: 14px;
+    z-index: 20; transition: opacity 0.3s;
+  }
+  .overlay.hidden { opacity: 0; pointer-events: none; }
+  .overlay-title { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+  .overlay-sub { color: var(--muted); font-size: 0.86rem; max-width: 280px; text-align: center; line-height: 1.65; }
+  .overlay-score { font-family: 'DM Mono', monospace; font-size: 2.8rem; color: var(--text); }
+  .overlay-score span { font-size: 0.88rem; color: var(--muted); display: block; text-align: center; }
+
+  /* ── HUD ── */
+  .result-badge {
+    position: absolute; top: 12px; right: 12px;
+    background: rgba(5,150,105,0.1);
+    border: 1px solid var(--accent3);
+    border-radius: 7px; padding: 5px 12px;
+    font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--accent3);
+    opacity: 0; transition: opacity 0.3s; z-index: 15;
+  }
+  .result-badge.show { opacity: 1; }
+
+  .progress-wrap {
+    position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+    width: 180px; height: 4px;
+    background: rgba(0,0,0,0.08); border-radius: 2px; overflow: hidden; z-index: 15;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 2px; transition: width 0.1s linear; width: 0%;
+  }
+
+  .session-info {
+    position: absolute; top: 9px; left: 12px;
+    font-family: 'DM Mono', monospace; font-size: 0.66rem;
+    color: var(--muted); z-index: 15;
+  }
+  .session-info span { color: var(--text); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .menu-toggle { display: flex; }
+    .stats { gap: 10px; }
+    .stat-val { font-size: 0.9rem; }
+    .stat-lbl { font-size: 0.5rem; }
+    .canvas-wrap { padding: 10px 8px 52px; }
+    .controls { gap: 6px; }
+    .btn { padding: 7px 13px; font-size: 0.72rem; }
+  }
+  @media (min-width: 641px) {
+    .mobile-panel { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Terapia<span> Visual</span></div>
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="hdr-score">0</div><div class="stat-lbl">Puntos</div></div>
+    <div class="stat"><div class="stat-val" id="hdr-hits">0</div><div class="stat-lbl">Aciertos</div></div>
+    <div class="stat"><div class="stat-val" id="hdr-acc">—</div><div class="stat-lbl">Precisión</div></div>
+    <div class="stat"><div class="stat-val" id="hdr-time">0s</div><div class="stat-lbl">Tiempo</div></div>
+  </div>
+  <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()">☰</button>
+</header>
+
+<!-- MOBILE PANEL -->
+<div class="mobile-panel" id="mobilePanel">
+  <div class="section-title" style="margin-bottom:9px">Ejercicio</div>
+  <div class="mobile-chips">
+    <button class="chip active" data-mode="circle" onclick="selectChip(this)"><span class="chip-icon">⭕</span>Círculo</button>
+    <button class="chip" data-mode="figure8" onclick="selectChip(this)"><span class="chip-icon">∞</span>Figura 8</button>
+    <button class="chip" data-mode="zigzag" onclick="selectChip(this)"><span class="chip-icon">⚡</span>Zigzag</button>
+    <button class="chip" data-mode="blink" onclick="selectChip(this)"><span class="chip-icon">✦</span>Parpadeo</button>
+    <button class="chip" data-mode="saccade" onclick="selectChip(this)"><span class="chip-icon">👁️</span>Sacádico</button>
+    <button class="chip" data-mode="spiral" onclick="selectChip(this)"><span class="chip-icon">🌀</span>Espiral</button>
+  </div>
+  <div class="mobile-sliders">
+    <div class="slider-group">
+      <label>Velocidad</label>
+      <input type="range" id="speedSliderM" min="0.3" max="3" step="0.1" value="1" oninput="updateSpeed(this.value,'m')">
+      <div class="slider-val" id="speedValM">1.0×</div>
+    </div>
+    <div class="slider-group">
+      <label>Duración</label>
+      <input type="range" id="durSliderM" min="10" max="60" step="5" value="30" oninput="updateDur(this.value,'m')">
+      <div class="slider-val" id="durValM">30s</div>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+  <!-- DESKTOP SIDEBAR -->
+  <div class="sidebar">
+    <div class="section-title">Ejercicios</div>
+    <button class="ex-btn active" data-mode="circle" onclick="selectBtn(this)">
+      <span class="icon">⭕</span><div class="info"><span class="ex-name">Círculo</span><span class="ex-desc">Seguimiento circular</span></div>
+    </button>
+    <button class="ex-btn" data-mode="figure8" onclick="selectBtn(this)">
+      <span class="icon">∞</span><div class="info"><span class="ex-name">Figura 8</span><span class="ex-desc">Movimiento en 8</span></div>
+    </button>
+    <button class="ex-btn" data-mode="zigzag" onclick="selectBtn(this)">
+      <span class="icon">⚡</span><div class="info"><span class="ex-name">Zigzag</span><span class="ex-desc">Seguimiento lateral</span></div>
+    </button>
+    <button class="ex-btn" data-mode="blink" onclick="selectBtn(this)">
+      <span class="icon">✦</span><div class="info"><span class="ex-name">Parpadeo</span><span class="ex-desc">Aparece y desaparece</span></div>
+    </button>
+    <button class="ex-btn" data-mode="saccade" onclick="selectBtn(this)">
+      <span class="icon">👁️</span><div class="info"><span class="ex-name">Sacádico</span><span class="ex-desc">Saltos oculares</span></div>
+    </button>
+    <button class="ex-btn" data-mode="spiral" onclick="selectBtn(this)">
+      <span class="icon">🌀</span><div class="info"><span class="ex-name">Espiral</span><span class="ex-desc">Seguimiento espiral</span></div>
+    </button>
+    <div class="divider"></div>
+    <div class="slider-group">
+      <label>Velocidad</label>
+      <input type="range" id="speedSlider" min="0.3" max="3" step="0.1" value="1" oninput="updateSpeed(this.value,'d')">
+      <div class="slider-val" id="speedVal">1.0×</div>
+    </div>
+    <div class="divider"></div>
+    <div class="slider-group">
+      <label>Duración sesión</label>
+      <input type="range" id="durSlider" min="10" max="60" step="5" value="30" oninput="updateDur(this.value,'d')">
+      <div class="slider-val" id="durVal">30s</div>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="canvas-wrap">
+    <div class="session-info">Ejercicio: <span id="mode-label">Círculo</span></div>
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="result-badge" id="resultBadge">¡Acierto!</div>
+
+    <canvas id="c"></canvas>
+
+    <div class="overlay" id="overlay">
+      <div class="overlay-title" id="ov-title">Terapia Visual</div>
+      <div class="overlay-sub" id="ov-sub">Sigue el punto con el cursor o el dedo. Mantente lo más cerca posible del objetivo.</div>
+      <div class="overlay-score" id="ov-score" style="display:none"></div>
+      <button class="btn primary" id="ov-btn" onclick="startSession()">Iniciar sesión</button>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="pauseBtn" onclick="togglePause()" disabled>Pausar</button>
+      <button class="btn" id="resetBtn" onclick="resetSession()" disabled>Reiniciar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let mode = 'circle', speed = 1.0, sessionDur = 30;
+let running = false, paused = false, animId = null;
+let t = 0, dotX = 0, dotY = 0, mouseX = -999, mouseY = -999;
+let score = 0, hits = 0, attempts = 0, sessionStart = 0, elapsed = 0;
+let blinkVisible = true, blinkTimer = 0, blinkInterval = 1.2;
+let sacTarget = {x:0,y:0}, sacTimer = 0, sacInterval = 1.5;
+let sacActive = false, sacClicked = false;
+let lastFrameT = 0;
+
+// ── RESIZE: fill available space ──
+function resize() {
+  const wrap = canvas.parentElement;
+  const padX = 32, padY = 60;
+  const availW = wrap.clientWidth  - padX;
+  const availH = wrap.clientHeight - padY;
+  const aspect = 16 / 9;
+  let cw = availW, ch = Math.round(availW / aspect);
+  if (ch > availH) { ch = availH; cw = Math.round(availH * aspect); }
+  canvas.width  = Math.max(cw, 240);
+  canvas.height = Math.max(ch, 135);
+}
+window.addEventListener('resize', () => { resize(); if (!running) drawIdle(); });
+resize();
+
+// ── INPUT ──
+canvas.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect();
+  mouseX = e.clientX - r.left; mouseY = e.clientY - r.top;
+});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  mouseX = e.touches[0].clientX - r.left;
+  mouseY = e.touches[0].clientY - r.top;
+}, { passive: false });
+canvas.addEventListener('click', e => {
+  const r = canvas.getBoundingClientRect();
+  handleTap(e.clientX - r.left, e.clientY - r.top);
+});
+canvas.addEventListener('touchend', e => {
+  const r = canvas.getBoundingClientRect();
+  handleTap(e.changedTouches[0].clientX - r.left, e.changedTouches[0].clientY - r.top);
+});
+
+function handleTap(cx, cy) {
+  if (!running) return;
+  if (mode === 'saccade' && sacActive) {
+    const d = Math.hypot(cx - sacTarget.x, cy - sacTarget.y);
+    if (d < 36) { hits++; score += Math.max(10, Math.round(500/(d+1))); sacActive = false; sacClicked = true; showBadge('¡Acierto!'); }
+    attempts++;
+  }
+  if (mode === 'blink' && blinkVisible) {
+    if (Math.hypot(cx - dotX, cy - dotY) < 30) { hits++; score += 50; showBadge('¡Acierto! +50'); }
+    attempts++;
+  }
+}
+
+// ── MOBILE MENU ──
+let menuOpen = false;
+function toggleMobileMenu() {
+  menuOpen = !menuOpen;
+  document.getElementById('mobilePanel').classList.toggle('open', menuOpen);
+  document.getElementById('menuToggle').textContent = menuOpen ? '✕' : '☰';
+}
+document.addEventListener('pointerdown', e => {
+  if (!menuOpen) return;
+  const panel = document.getElementById('mobilePanel');
+  const toggle = document.getElementById('menuToggle');
+  if (!panel.contains(e.target) && !toggle.contains(e.target)) {
+    menuOpen = false;
+    panel.classList.remove('open');
+    toggle.textContent = '☰';
+  }
+});
+
+// ── MODE ──
+const modeLabels = { circle:'Círculo', figure8:'Figura 8', zigzag:'Zigzag', blink:'Parpadeo', saccade:'Sacádico', spiral:'Espiral' };
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('mode-label').textContent = modeLabels[m];
+  if (!running) drawIdle();
+}
+function selectBtn(el) {
+  document.querySelectorAll('.ex-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  setMode(el.dataset.mode);
+}
+function selectChip(el) {
+  document.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  setMode(el.dataset.mode);
+  toggleMobileMenu();
+}
+
+// ── SLIDERS ── (src: 'd'=desktop, 'm'=mobile)
+function updateSpeed(v, src) {
+  speed = parseFloat(v);
+  const txt = speed.toFixed(1) + '×';
+  document.getElementById('speedVal').textContent = txt;
+  document.getElementById('speedValM').textContent = txt;
+  if (src !== 'd') document.getElementById('speedSlider').value = v;
+  if (src !== 'm') document.getElementById('speedSliderM').value = v;
+}
+function updateDur(v, src) {
+  sessionDur = parseInt(v);
+  const txt = v + 's';
+  document.getElementById('durVal').textContent = txt;
+  document.getElementById('durValM').textContent = txt;
+  if (src !== 'd') document.getElementById('durSlider').value = v;
+  if (src !== 'm') document.getElementById('durSliderM').value = v;
+}
+
+// ── BADGE ──
+let badgeTimer = null;
+function showBadge(msg) {
+  const b = document.getElementById('resultBadge');
+  b.textContent = msg; b.classList.add('show');
+  clearTimeout(badgeTimer);
+  badgeTimer = setTimeout(() => b.classList.remove('show'), 1300);
+}
+
+// ── HUD ──
+function updateHdr() {
+  document.getElementById('hdr-score').textContent = score;
+  document.getElementById('hdr-hits').textContent = hits;
+  document.getElementById('hdr-acc').textContent = attempts > 0 ? Math.round(hits/attempts*100) + '%' : '—';
+  document.getElementById('hdr-time').textContent = Math.round(elapsed) + 's';
+}
+
+// ── SESSION ──
+function startSession() {
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('pauseBtn').disabled = false;
+  document.getElementById('resetBtn').disabled = false;
+  document.getElementById('ov-score').style.display = 'none';
+  score = 0; hits = 0; attempts = 0; t = 0; elapsed = 0;
+  blinkTimer = 0; blinkVisible = true;
+  sacTimer = 0; sacActive = false; sacClicked = false;
+  sacTarget = { x: canvas.width/2, y: canvas.height/2 };
+  sessionStart = performance.now();
+  running = true; paused = false;
+  document.getElementById('pauseBtn').textContent = 'Pausar';
+  if (animId) cancelAnimationFrame(animId);
+  loop();
+}
+
+function togglePause() {
+  if (!running) return;
+  paused = !paused;
+  document.getElementById('pauseBtn').textContent = paused ? 'Reanudar' : 'Pausar';
+  if (!paused) { sessionStart = performance.now() - elapsed * 1000; loop(); }
+}
+
+function resetSession() {
+  running = false; paused = false; cancelAnimationFrame(animId);
+  document.getElementById('pauseBtn').disabled = true;
+  document.getElementById('resetBtn').disabled = true;
+  const ov = document.getElementById('overlay');
+  ov.classList.remove('hidden');
+  document.getElementById('ov-title').textContent = 'Terapia Visual';
+  document.getElementById('ov-sub').textContent = 'Sigue el punto con el cursor o el dedo. Mantente lo más cerca posible del objetivo.';
+  document.getElementById('ov-btn').textContent = 'Iniciar sesión';
+  document.getElementById('ov-score').style.display = 'none';
+  score = 0; hits = 0; attempts = 0; elapsed = 0;
+  updateHdr(); drawIdle();
+}
+
+function endSession() {
+  running = false; cancelAnimationFrame(animId);
+  document.getElementById('pauseBtn').disabled = true;
+  document.getElementById('resetBtn').disabled = true;
+  const ov = document.getElementById('overlay');
+  ov.classList.remove('hidden');
+  document.getElementById('ov-title').textContent = '¡Sesión completada!';
+  document.getElementById('ov-sub').textContent = `Precisión: ${attempts > 0 ? Math.round(hits/attempts*100) : 100}% · Aciertos: ${hits}`;
+  const sc = document.getElementById('ov-score');
+  sc.innerHTML = score + '<span>puntos totales</span>';
+  sc.style.display = 'block';
+  document.getElementById('ov-btn').textContent = 'Nueva sesión';
+  updateHdr();
+}
+
+// ── DOT POSITION ──
+function getDotPos(ts) {
+  const W = canvas.width, H = canvas.height, cx = W/2, cy = H/2;
+  const rx = W * 0.41, ry = H * 0.39;
+  switch (mode) {
+
+    // Perfect circle: equal radius on both axes
+    case 'circle': {
+      const r = Math.min(rx, ry);
+      const a = ts * speed;
+      return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+    }
+
+    case 'figure8': return { x: cx + rx*Math.sin(ts*speed), y: cy + ry*Math.sin(ts*speed*2)*0.5 };
+
+    // Zigzag: straight right→left, then diagonal left→right to next row. 4 rows, repeat.
+    case 'zigzag': {
+      const xL = W * 0.06, xR = W * 0.94;
+      const segW = xR - xL;
+      // 5 evenly spaced rows
+      const numRows = 5;
+      const rows = Array.from({length: numRows}, (_, i) => H * (0.12 + i * 0.19));
+      // Each cycle = numRows legs. Each leg = straight (R→L) + diagonal (L→R, drop one row)
+      // Last leg wraps back to row 0 via diagonal
+      const legDur = 1.0; // normalized duration per leg
+      const diagFrac = 0.18; // fraction of leg spent on diagonal
+      const totalDur = numRows * legDur;
+      const d = (ts * speed * 0.9) % totalDur;
+      const legIdx = Math.floor(d / legDur) % numRows;
+      const lp = (d % legDur) / legDur; // 0..1
+
+      const rowA = legIdx;
+      const rowB = (legIdx + 1) % numRows;
+      const y1 = rows[rowA], y2 = rows[rowB];
+
+      let x, y;
+      if (lp < (1 - diagFrac)) {
+        // Straight: right → left
+        const p = lp / (1 - diagFrac);
+        x = xR - p * segW;
+        y = y1;
+      } else {
+        // Diagonal: left → right, dropping to next row
+        const p = (lp - (1 - diagFrac)) / diagFrac;
+        const ep = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p+2,2)/2;
+        x = xL + ep * segW;
+        y = y1 + (y2 - y1) * ep;
+      }
+      return { x, y };
+    }
+
+    case 'blink': case 'spiral': {
+      const a = ts*speed;
+      const r = Math.min(rx,ry)*((Math.sin(a*0.3)+1)*0.4+0.15);
+      return { x: cx + r*Math.cos(a*1.5), y: cy + r*Math.sin(a*1.5) };
+    }
+    default: return { x: cx, y: cy };
+  }
+}
+
+function scoreProximity(dx, dy) {
+  const d = Math.hypot(dx, dy);
+  return d < 80 ? Math.round((1 - d/80) * 0.3) : 0;
+}
+
+// ── LOOP ──
+function loop(now) {
+  if (!running || paused) return;
+  now = now || performance.now();
+  const dt = Math.min((now - lastFrameT) / 1000, 0.05);
+  lastFrameT = now;
+  elapsed = (now - sessionStart) / 1000;
+  if (elapsed >= sessionDur) { endSession(); return; }
+
+  t += dt;
+  document.getElementById('progressBar').style.width = (elapsed/sessionDur*100) + '%';
+
+  if (mode === 'saccade') {
+    sacTimer += dt;
+    if (!sacActive && sacTimer > sacInterval/speed) {
+      sacTimer = 0; sacActive = true; sacClicked = false;
+      sacTarget = { x: 44 + Math.random()*(canvas.width-88), y: 44 + Math.random()*(canvas.height-88) };
+    }
+    if (sacActive && sacTimer > 2.5/speed) {
+      if (!sacClicked) attempts++;
+      sacActive = false; sacTimer = 0;
+    }
+    dotX = sacTarget.x; dotY = sacTarget.y;
+  } else if (mode === 'blink') {
+    blinkTimer += dt;
+    if (blinkTimer > blinkInterval/speed) {
+      blinkTimer = 0; blinkVisible = !blinkVisible;
+      if (blinkVisible) {
+        dotX = 40 + Math.random()*(canvas.width-80);
+        dotY = 40 + Math.random()*(canvas.height-80);
+      }
+    }
+  } else {
+    const pos = getDotPos(t);
+    dotX = pos.x; dotY = pos.y;
+    score += scoreProximity(mouseX - dotX, mouseY - dotY);
+  }
+
+  draw();
+  updateHdr();
+  animId = requestAnimationFrame(loop);
+}
+
+// ── DRAW ──
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Ghost path
+  if (mode !== 'saccade' && mode !== 'blink') {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(37,99,235,0.1)';
+    ctx.lineWidth = 1.5; ctx.setLineDash([4,8]);
+
+    if (mode === 'circle') {
+      // Perfect static circle
+      const r = Math.min(W*0.41, H*0.39);
+      ctx.beginPath(); ctx.arc(W/2, H/2, r, 0, Math.PI*2);
+      ctx.stroke();
+    } else if (mode === 'zigzag') {
+      const xL = W*0.06, xR = W*0.94;
+      const numRows = 5;
+      const rows = Array.from({length: numRows}, (_, i) => H * (0.12 + i * 0.19));
+      const diagFrac = 0.18;
+      ctx.beginPath();
+      ctx.moveTo(xR, rows[0]);
+      for (let i = 0; i < numRows; i++) {
+        const y1 = rows[i], y2 = rows[(i + 1) % numRows];
+        // straight right → left
+        ctx.lineTo(xL, y1);
+        // diagonal left → right to next row
+        ctx.lineTo(xR, y2);
+      }
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      for (let i = 0; i <= 120; i++) {
+        const tt = (i/120)*Math.PI*2/speed + t;
+        let p;
+        if (mode === 'spiral') {
+          const r = Math.min(W*0.41,H*0.39)*((Math.sin(tt*0.3)+1)*0.4+0.15);
+          p = { x: W/2 + r*Math.cos(tt*1.5), y: H/2 + r*Math.sin(tt*1.5) };
+        } else { p = getDotPos(tt); }
+        i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Cursor ring (only if mouse is inside canvas)
+  if (mouseX >= 0 && mouseX <= W && mouseY >= 0 && mouseY <= H) {
+    const cdist = Math.hypot(mouseX - dotX, mouseY - dotY);
+    const cc = cdist < 30 ? '#059669' : cdist < 60 ? '#d97706' : '#94a3b8';
+    ctx.beginPath(); ctx.arc(mouseX, mouseY, 10, 0, Math.PI*2);
+    ctx.strokeStyle = cc; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(mouseX, mouseY, 2.5, 0, Math.PI*2);
+    ctx.fillStyle = cc; ctx.fill();
+
+    if (mode !== 'saccade' && mode !== 'blink' && cdist < 80) {
+      const frac = 1 - cdist/80;
+      ctx.beginPath(); ctx.arc(dotX, dotY, 28 + (1-frac)*8, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(5,150,105,${frac*0.38})`; ctx.lineWidth = 2; ctx.stroke();
+    }
+  }
+
+  if (mode === 'saccade') {
+    if (sacActive) {
+      drawDot(sacTarget.x, sacTarget.y, '#7c3aed', 'rgba(124,58,237,0.1)');
+      const prog = sacTimer / (2.5/speed);
+      ctx.beginPath();
+      ctx.arc(sacTarget.x, sacTarget.y, 22, -Math.PI/2, -Math.PI/2 + prog*Math.PI*2);
+      ctx.strokeStyle = 'rgba(124,58,237,0.3)'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    return;
+  }
+  if (mode === 'blink') {
+    if (blinkVisible) drawDot(dotX, dotY, '#2563eb', 'rgba(37,99,235,0.1)');
+    return;
+  }
+  drawDot(dotX, dotY, '#2563eb', 'rgba(37,99,235,0.09)');
+}
+
+function drawDot(x, y, color, halo) {
+  const g = ctx.createRadialGradient(x,y,0, x,y,26);
+  g.addColorStop(0, halo); g.addColorStop(1,'transparent');
+  ctx.beginPath(); ctx.arc(x,y,26,0,Math.PI*2); ctx.fillStyle = g; ctx.fill();
+  ctx.beginPath(); ctx.arc(x,y,10,0,Math.PI*2); ctx.fillStyle = color; ctx.fill();
+  ctx.beginPath(); ctx.arc(x,y,15,0,Math.PI*2);
+  ctx.strokeStyle = color; ctx.globalAlpha = 0.2; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawIdle() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const r = Math.min(W*0.41, H*0.39);
+  ctx.beginPath(); ctx.arc(W/2, H/2, r, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(37,99,235,0.08)'; ctx.lineWidth = 1;
+  ctx.setLineDash([4,8]); ctx.stroke(); ctx.setLineDash([]);
+  drawDot(W/2, H/2, '#2563eb', 'rgba(37,99,235,0.07)');
+}
+
+drawIdle();
+</script>
+</body>
+</html>
